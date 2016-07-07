@@ -50,7 +50,7 @@ func GetUserFromEmailPassword(email, password string) (*User, error) {
 		first_name, last_name,
 		is_admin
 		FROM users
-		WHERE email = $1::varchar`,
+		WHERE email = $1::varchar AND (expiration_date IS NULL OR expiration_date > current_timestamp)`,
 		email,
 	)
 	if err != nil {

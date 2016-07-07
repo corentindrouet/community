@@ -114,6 +114,7 @@ func createUsersTable() (bool, error) {
 			email            varchar(36)                NOT NULL DEFAULT '' UNIQUE,
 			password         varchar(60)                NOT NULL DEFAULT '',
 			signup_date      timestamp with time zone   NOT NULL DEFAULT current_timestamp,
+			expiration_date  timestamp with time zone   DEFAULT NULL,
 			is_admin         boolean,
 			activated        boolean
 		);`)
