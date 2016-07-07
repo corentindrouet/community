@@ -45,7 +45,7 @@ func compareUser(user *User) {
 }
 
 func TestCreateUser(t *testing.T) {
-	user, err := CreateUser(activated, email, firstName, lastName, password, isAdmin)
+	user, err := CreateUser(activated, email, firstName, lastName, password, isAdmin, "")
 
 	if err != nil {
 		log.Fatalln("Cannot create the user:", err.Error())

@@ -155,6 +155,7 @@ func Migrate() error {
 			adminlastname,
 			adminpwd,
 			true,
+			"",
 		)
 
 		if err != nil {

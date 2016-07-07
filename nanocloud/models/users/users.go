@@ -158,6 +158,7 @@ func CreateUser(
 	lastName string,
 	password string,
 	isAdmin bool,
+	expirationDate string,
 ) (*User, error) {
 	id := uuid.NewV4().String()
 
@@ -166,21 +167,35 @@ func CreateUser(
 		return nil, err
 	}
 
+	if expirationDate != "" {
+			expirationDate = expirationDate + "days"
+			expirationDate, err := db.Query(
+					`SELECT current_timestamp + interval $1::`,
+			expirationDate)
+			if err != nil {
+					defer expirationDate.Close()
+			}
+			if !expirationDate.Next() {
+					return nil, UserNotCreated
+			}
+			expirationDate.Scan(&expirationDate)
+	}
 	rows, err := db.Query(
 		`INSERT INTO users
     (id, email, activated,
     first_name, last_name,
-    password, is_admin)
+    password, is_admin, expiration_date)
     VALUES(
       $1::varchar, $2::varchar, $3::bool,
       $4::varchar, $5::varchar,
-      $6::varchar, $7::bool)
+	  $6::varchar, $7::bool,
+	  $8::timestamp)
     RETURNING id, email, activated,
     first_name, last_name,
-    is_admin`,
+    is_admin, expiration_date`,
 		id, email, activated,
 		firstName, lastName,
-		pass, isAdmin)
+		pass, isAdmin, nil)
 
 	if err != nil {
 		switch err.Error() {
@@ -205,6 +220,7 @@ func CreateUser(
 		&user.Id, &user.Email,
 		&user.Activated, &user.FirstName,
 		&user.LastName, &user.IsAdmin,
+		&user.ExpDate,
 	)
 
 	return &user, err

@@ -29,6 +29,7 @@ func init() {
 		"user",
 		"secret",
 		false,
+		"",
 	)
 
 	if err != nil {
