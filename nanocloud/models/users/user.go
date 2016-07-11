@@ -21,7 +21,7 @@ type User struct {
 	FirstName  string `json:"first-name"`
 	LastName   string `json:"last-name"`
 	SignupDate int    `json:"signup-date,omitempty"`
-	ExpDate    int    `json:"expiration-date"`
+	ExpDate    string `json:"expiration-date"`
 }
 
 func (u *User) GetID() string {
