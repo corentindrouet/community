@@ -40,6 +40,13 @@ const Validations = buildValidations({
   email: [
     validator('presence', true),
     validator('format', { type: 'email' })
+  ],
+  expirationDate: [
+    validator('presence', true),
+    validador('number', {
+      allowString: true,
+      positive: 0
+    })
   ]
 });
 
