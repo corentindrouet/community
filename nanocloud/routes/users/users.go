@@ -238,7 +238,7 @@ func Post(c *echo.Context) error {
 		u.LastName,
 		u.Password,
 		false,
-		"",
+		u.ExpDate,
 	)
 	switch err {
 	case users.UserDuplicated:
