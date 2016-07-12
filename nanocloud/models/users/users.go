@@ -390,6 +390,28 @@ func UpdateUserFirstName(id string, firstname string) error {
 	return nil
 }
 
+func UpdateUserExpirationDays(id string, expirationDays string) error {
+
+		expirationDays = expirationDays + "days"
+	res, err := db.Exec(
+		`UPDATE users
+		SET expiration_date = current_timestamp + $1
+		WHERE id = $2::varchar`,
+		expirationDays, id)
+	if err != nil {
+		return err
+	}
+
+	updated, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if updated == 0 {
+		return UserNotFound
+	}
+	return nil
+}
+
 func UpdateUserLastName(id string, lastname string) error {
 
 	res, err := db.Exec(

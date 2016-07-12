@@ -144,6 +144,29 @@ export default Ember.Controller.extend({
               this.toast.error("Password has not been updated");
             });
         });
+    },
+
+    changeExpirationDays: function(defer) {
+
+      this.get('model')
+        .validate({ on: ['expirationDays'] })
+        .then(({ m, validations }) => {
+
+          if (validations.get('isInvalid') === true) {
+            this.toast.error(this.get('model.validations.attrs.expirationDays.messages'));
+            return defer.reject(this.get('model.validations.attrs.expirationDays.messages'));
+          }
+
+          this.model.save()
+            .then(() => {
+              defer.resolve();
+              this.send('refreshModel');
+              this.toast.success('Expiration date has been updated successfully');
+            }, () => {
+              defer.reject();
+              this.toast.error("Expiration date has not been updated");
+            });
+        });
     }
   }
 });
