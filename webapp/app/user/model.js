@@ -43,9 +43,10 @@ const Validations = buildValidations({
   ],
   expirationDate: [
     validator('presence', true),
-    validador('number', {
+    validator('number', {
       allowString: true,
-      positive: 0
+      positive: true,
+      integer: true,
     })
   ]
 });
@@ -58,6 +59,7 @@ export default DS.Model.extend(Validations, {
   lastName: DS.attr('string'),
   password: DS.attr('string'),
   signupDate: DS.attr('number'),
+  expirationDate: DS.attr('string'),
 
   fullName: function() {
     if (this.get('firstName') && this.get('lastName')) {
