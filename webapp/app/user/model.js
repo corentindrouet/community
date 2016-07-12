@@ -43,7 +43,7 @@ const Validations = buildValidations({
   ],
   expirationDays: [
     validator('presence', true),
-    validator('length', { max: 7 }),
+    validator('length', { max: 6 }),
     validator('number', {
       allowString: true,
       positive: true,
