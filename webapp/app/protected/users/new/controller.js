@@ -22,6 +22,7 @@ export default Ember.Controller.extend({
             .then(() => {
               this.set('loadState', false);
               this.transitionToRoute('protected.users');
+              this.toast.succes('User has been created successfully');
             }, (errorMessage) => {
               this.set('loadState', false);
               this.toast.error('Cannot create new user : ' + errorMessage);
