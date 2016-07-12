@@ -24,6 +24,7 @@ package users
 
 import (
 	errors "errors"
+	"database/sql"
 
 	"github.com/Nanocloud/community/nanocloud/connectors/db"
 	log "github.com/Sirupsen/logrus"
@@ -48,7 +49,7 @@ func GetUserFromEmailPassword(email, password string) (*User, error) {
 		`SELECT id, activated,
 		email, password,
 		first_name, last_name,
-		is_admin
+		is_admin, expiration_date
 		FROM users
 		WHERE email = $1::varchar AND (expiration_date IS NULL OR expiration_date > current_timestamp)`,
 		email,
@@ -67,7 +68,7 @@ func GetUserFromEmailPassword(email, password string) (*User, error) {
 		&user.Id, &user.Activated,
 		&user.Email, &passwordHash,
 		&user.FirstName, &user.LastName,
-		&user.IsAdmin,
+		&user.IsAdmin, &user.ExpDate,
 	)
 	rows.Close()
 
@@ -87,7 +88,7 @@ func GetUserFromEmailPassword(email, password string) (*User, error) {
 func FindUsers() ([]*User, error) {
 	rows, err := db.Query(
 		`SELECT id, first_name, last_name, email,
-			is_admin, activated, extract(epoch from signup_date)
+			is_admin, activated, extract(epoch from signup_date), expiration_date
 		FROM users`,
 	)
 	if err != nil {
@@ -108,6 +109,7 @@ func FindUsers() ([]*User, error) {
 			&user.IsAdmin,
 			&user.Activated,
 			&timestamp,
+			&user.ExpDate,
 		)
 		// javascript time is in millisecond not in second
 		user.SignupDate = int(1000 * timestamp)
@@ -167,10 +169,27 @@ func CreateUser(
 		return nil, err
 	}
 
+	rows, err := db.Query(
+		`INSERT INTO users
+	(id, email, activated,
+	first_name, last_name,
+	password, is_admin)
+	VALUES(
+	  $1::varchar, $2::varchar, $3::bool,
+	  $4::varchar, $5::varchar,
+	  $6::varchar, $7::bool
+	  )
+	RETURNING id, email, activated,
+	first_name, last_name,
+	is_admin`,
+		id, email, activated,
+		firstName, lastName,
+		pass, isAdmin)
+
 	if expirationDate != "" {
 			expirationDate = expirationDate + "days"
 			expirationDate, err := db.Query(
-					`SELECT current_timestamp + interval $1::`,
+					`SELECT current_timestamp + interval $1`,
 			expirationDate)
 			if err != nil {
 					defer expirationDate.Close()
@@ -179,23 +198,21 @@ func CreateUser(
 					return nil, UserNotCreated
 			}
 			expirationDate.Scan(&expirationDate)
+			up, err := db.Query(
+			`UPDATE users SET expiration_date = $1 WHERE
+			 id = $2::varchar, activated = $3::bool,
+			 email = $4::varchar, first_name = $5::varchar,
+			 last_name = $6::varchar, is_admin = $7::bool
+			 RETURNING expiration_date
+			`,
+			expirationDate, id, activated, email, firstName, lastName, isAdmin)
+			defer up.Close()
+
+			if !up.Next() {
+				return nil, UserNotCreated
+			}
+			up.Scan(&expirationDate)
 	}
-	rows, err := db.Query(
-		`INSERT INTO users
-    (id, email, activated,
-    first_name, last_name,
-    password, is_admin, expiration_date)
-    VALUES(
-      $1::varchar, $2::varchar, $3::bool,
-      $4::varchar, $5::varchar,
-	  $6::varchar, $7::bool,
-	  $8::timestamp)
-    RETURNING id, email, activated,
-    first_name, last_name,
-    is_admin, expiration_date`,
-		id, email, activated,
-		firstName, lastName,
-		pass, isAdmin, nil)
 
 	if err != nil {
 		switch err.Error() {
@@ -220,8 +237,8 @@ func CreateUser(
 		&user.Id, &user.Email,
 		&user.Activated, &user.FirstName,
 		&user.LastName, &user.IsAdmin,
-		&user.ExpDate,
 	)
+	user.ExpDate = expirationDate
 
 	return &user, err
 }
@@ -397,7 +414,7 @@ func UpdateUserLastName(id string, lastname string) error {
 func GetUser(id string) (*User, error) {
 	rows, err := db.Query(
 		`SELECT id, first_name, last_name, email, is_admin,
-			activated, extract(epoch from signup_date)
+			activated, extract(epoch from signup_date), expiration_date
 		FROM users
 		WHERE id = $1::varchar`,
 		id)
@@ -410,6 +427,8 @@ func GetUser(id string) (*User, error) {
 		var user User
 		var timestamp float64
 
+		var tmp sql.NullString
+
 		err = rows.Scan(
 			&user.Id,
 			&user.FirstName,
@@ -418,9 +437,14 @@ func GetUser(id string) (*User, error) {
 			&user.IsAdmin,
 			&user.Activated,
 			&timestamp,
+			&tmp,
 		)
 		if err != nil {
 			return nil, err
+		}
+		user.ExpDate = ""
+		if tmp.Valid {
+			user.ExpDate = tmp.String
 		}
 		// javascript time is in millisecond not in second
 		user.SignupDate = int(1000 * timestamp)
