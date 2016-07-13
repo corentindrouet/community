@@ -347,22 +347,42 @@ func UpdateUserFirstName(id string, firstname string) error {
 
 func UpdateUserExpirationDays(id string, expirationDays string) error {
 
+	if expirationDays != "" {
 		expirationDays = expirationDays + "days"
-	res, err := db.Exec(
-		`UPDATE users
-		SET expiration_date = current_timestamp + $1
-		WHERE id = $2::varchar`,
-		expirationDays, id)
-	if err != nil {
-		return err
-	}
+		res, err := db.Exec(
+			`UPDATE users
+			SET expiration_date = current_timestamp + $1
+			WHERE id = $2::varchar`,
+			expirationDays, id)
+		if err != nil {
+			return err
+		}
 
-	updated, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if updated == 0 {
-		return UserNotFound
+		updated, err := res.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if updated == 0 {
+			return UserNotFound
+		}
+	} else {
+			log.Info("empty string")
+		res, err := db.Exec(
+			`UPDATE users
+			SET expiration_date = NULL
+			WHERE id = $1`,
+			id)
+		if err != nil {
+			return err
+		}
+
+		updated, err := res.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if updated == 0 {
+			return UserNotFound
+		}
 	}
 	return nil
 }
